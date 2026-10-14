@@ -374,6 +374,7 @@ class SchemaSurgeonGateway:
                 error_class="safety_refusal",
                 duration_ms=(time.time() - start_time) * 1000.0,
                 evidence_summary=gate_decision.evidence,
+                decision=gate_decision.decision,
             )
 
         # Apply Request Adapter to transform request
@@ -632,6 +633,7 @@ class SchemaSurgeonGateway:
             response_data=unwrapped_data,
             duration_ms=dur_ms,
             evidence_summary=gate_decision.evidence,
+            decision="AUTO_REPAIR",
         )
 
     def _verify_outcome(

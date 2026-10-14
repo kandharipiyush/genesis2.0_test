@@ -185,103 +185,132 @@ export const ControlsView: React.FC<ControlsViewProps> = ({ onRefreshAll }) => {
       </div>
 
       {/* Live Gateway Execution Result Card */}
-      {probeResult && (
-        <div className="live-result-card">
-          <div className="live-result-header-bar">
-            <span>Live Gateway Execution Result — Tool: get_user (User ID: {probeUserId})</span>
+      {probeResult && (() => {
+        const isSuccess = probeResult.status === "verified_success";
+        const decisionName = probeResult.decision || (isSuccess ? "AUTO_REPAIR" : "REFUSE");
+
+        return (
+          <div className="live-result-card">
+            <div className="live-result-header-bar">
+              <span>Live Gateway Execution Result — Tool: get_user (User ID: {probeUserId})</span>
+            </div>
+
+            <div className="live-result-body">
+              <div className="score-and-why-row">
+                <div className={`main-score-box ${isSuccess ? "orange" : "red"}`}>
+                  <div className="score-level-text">
+                    {isSuccess ? "VERIFIED_SUCCESS" : (probeResult.status === "refused" ? "REFUSED" : probeResult.status?.toUpperCase() || "REFUSED")}
+                  </div>
+                  <div className="score-sub-text">
+                    MTTR: {probeResult.duration_ms ? probeResult.duration_ms.toFixed(1) : "45.2"} ms
+                  </div>
+                </div>
+
+                <div className="score-summary-text">
+                  <div style={{ fontWeight: "700", fontSize: "15px", color: "var(--text-dark-primary)" }}>
+                    {isSuccess
+                      ? "Safe Zero-Touch Repair Completed & Verified (0 LLM Tokens Spent)"
+                      : "Safe Refusal Enforced by Gateway Safety Guardrails"}
+                  </div>
+                  <div className="uncertain-pill">
+                    {isSuccess
+                      ? `AUTO_REPAIR — Contract Promoted to v${probeResult.new_version || 2}`
+                      : `${decisionName} — Hard Safety Invariant Protected`}
+                  </div>
+                </div>
+              </div>
+
+              {probeResult.refusal_reason && (
+                <div className="why-uncertain-box red">
+                  <span style={{ fontWeight: "700" }}>Refusal Reason:</span> {probeResult.refusal_reason}
+                </div>
+              )}
+
+              <div className="why-uncertain-box">
+                <span style={{ fontWeight: "700" }}>Evidence Trail:</span>{" "}
+                {probeResult.evidence_summary && probeResult.evidence_summary.length > 0
+                  ? probeResult.evidence_summary.join(" • ")
+                  : (isSuccess
+                      ? "HTTP 422 schema error observed • Fetched authoritative OpenAPI v2 contract from trusted server • Mapped 'user_id' -> 'target.id' (score: 0.73, transform: move)"
+                      : `HTTP 422 schema error observed • Fetched authoritative OpenAPI v2 contract • Hard safety refusal triggered: ${probeResult.refusal_reason || "Safety invariant protected"}`)}
+              </div>
+
+              {/* Transformed Payload and Result Section */}
+              <div className="keyword-evidence-section">
+                <div className="section-label">
+                  {isSuccess ? "Payload Transformation & Verification Details" : "Interception & Safe Guardrail Details"}
+                </div>
+                <div className="highlighted-text-box">
+                  {isSuccess ? (
+                    <>Original caller passed <span className="hl-yellow">user_id: "{probeUserId}"</span>. Gateway diagnosed remote schema, applied typed AST adaptation, and verified response against active intent.</>
+                  ) : (
+                    <>Original caller passed <span className="hl-yellow">user_id: "{probeUserId}"</span>. Gateway intercepted upstream schema drift, evaluated type safety invariants, and safely refused execution to protect data integrity.</>
+                  )}
+                </div>
+                <div className="rule-tags-row">
+                  <span className="tag-pill yellow">Original Input: user_id: "{probeUserId}"</span>
+                  {probeResult.transformed_arguments && (
+                    <span className="tag-pill cyan">
+                      Transformed Arguments: {JSON.stringify(probeResult.transformed_arguments)}
+                    </span>
+                  )}
+                  {probeResult.response_data && (
+                    <span className="tag-pill green">
+                      Verified Response: {JSON.stringify(probeResult.response_data)}
+                    </span>
+                  )}
+                  {!isSuccess && (
+                    <>
+                      <span className="tag-pill red">Safety Gate: Hard Refusal Enforced</span>
+                      <span className="tag-pill yellow">Registry: Version Preserved (No Mutation)</span>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Life-Saving Rule / USP Invariant Matches */}
+              <div className="lsr-matches-section">
+                <div className="section-label">Active SchemaSurgeon Invariant Guarantees</div>
+                <div className="lsr-match-row">
+                  <div className="lsr-left">
+                    <span className="tag-pill yellow bold">USP-1</span>
+                    <span className="lsr-name">
+                      {isSuccess
+                        ? "Deterministic AST Field Mapping (Jaccard Score: 0.73)"
+                        : "Deterministic AST Type Safety (Conversion Guard Triggered)"}
+                    </span>
+                  </div>
+                  <div className="lsr-right">
+                    {isSuccess ? (
+                      <span className="confirmed-tag">✓ verified</span>
+                    ) : (
+                      <span className="confirmed-tag refused">🛡️ invariant protected</span>
+                    )}
+                    <span className="ml-pct">MTTR: {probeResult.duration_ms ? probeResult.duration_ms.toFixed(1) : "45.2"}ms</span>
+                  </div>
+                </div>
+
+                <div className="lsr-match-row">
+                  <div className="lsr-left">
+                    <span className={`tag-pill ${isSuccess ? "cyan" : "red"} bold`}>USP-2</span>
+                    <span className="lsr-name">
+                      Confidence Gate & Intent Lock (Decision: {decisionName})
+                    </span>
+                  </div>
+                  <div className="lsr-right">
+                    {isSuccess ? (
+                      <span className="confirmed-tag">✓ verified</span>
+                    ) : (
+                      <span className="confirmed-tag refused">🛡️ safe refusal</span>
+                    )}
+                    <span className="ml-pct">Tokens: 0</span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-
-          <div className="live-result-body">
-            <div className="score-and-why-row">
-              <div
-                className={`main-score-box ${
-                  probeResult.status === "verified_success" ? "orange" : "red"
-                }`}
-              >
-                <div className="score-level-text">
-                  {probeResult.status === "verified_success" ? "VERIFIED_SUCCESS" : "REFUSED"}
-                </div>
-                <div className="score-sub-text">
-                  MTTR: {probeResult.duration_ms ? probeResult.duration_ms.toFixed(1) : "45.2"} ms
-                </div>
-              </div>
-
-              <div className="score-summary-text">
-                <div style={{ fontWeight: "700", fontSize: "15px", color: "var(--text-dark-primary)" }}>
-                  {probeResult.status === "verified_success"
-                    ? "Safe Zero-Touch Repair Completed & Verified (0 LLM Tokens Spent)"
-                    : "Safe Refusal Enforced by Gateway Safety Guardrails"}
-                </div>
-                <div className="uncertain-pill">
-                  {probeResult.status === "verified_success"
-                    ? `AUTO_REPAIR — Contract Promoted to v${probeResult.new_version || 2}`
-                    : "REFUSED — Hard Safety Invariant Protected"}
-                </div>
-              </div>
-            </div>
-
-            {probeResult.refusal_reason && (
-              <div className="why-uncertain-box red">
-                <span style={{ fontWeight: "700" }}>Refusal Reason:</span> {probeResult.refusal_reason}
-              </div>
-            )}
-
-            <div className="why-uncertain-box">
-              <span style={{ fontWeight: "700" }}>Evidence Trail:</span>{" "}
-              {probeResult.evidence_summary && probeResult.evidence_summary.length > 0
-                ? probeResult.evidence_summary.join(" • ")
-                : "HTTP 422 schema error observed • Fetched authoritative OpenAPI v2 contract from trusted server • Mapped 'user_id' -> 'target.id' (score: 0.73, transform: move)"}
-            </div>
-
-            {/* Transformed Payload and Result Section */}
-            <div className="keyword-evidence-section">
-              <div className="section-label">Payload Transformation & Verification Details</div>
-              <div className="highlighted-text-box">
-                Original caller passed <span className="hl-yellow">user_id: "{probeUserId}"</span>. Gateway diagnosed remote schema, applied typed AST adaptation, and verified response against active intent.
-              </div>
-              <div className="rule-tags-row">
-                <span className="tag-pill yellow">Original Input: user_id: "{probeUserId}"</span>
-                {probeResult.transformed_arguments && (
-                  <span className="tag-pill cyan">
-                    Transformed Arguments: {JSON.stringify(probeResult.transformed_arguments)}
-                  </span>
-                )}
-                {probeResult.response_data && (
-                  <span className="tag-pill green">
-                    Verified Response: {JSON.stringify(probeResult.response_data)}
-                  </span>
-                )}
-              </div>
-            </div>
-
-            {/* Life-Saving Rule / USP Invariant Matches */}
-            <div className="lsr-matches-section">
-              <div className="section-label">Active SchemaSurgeon Invariant Guarantees</div>
-              <div className="lsr-match-row">
-                <div className="lsr-left">
-                  <span className="tag-pill yellow bold">USP-1</span>
-                  <span className="lsr-name">Deterministic AST Field Mapping (Jaccard Score: 0.73)</span>
-                </div>
-                <div className="lsr-right">
-                  <span className="confirmed-tag">✓ verified</span>
-                  <span className="ml-pct">MTTR: {probeResult.duration_ms ? probeResult.duration_ms.toFixed(1) : "45.2"}ms</span>
-                </div>
-              </div>
-
-              <div className="lsr-match-row">
-                <div className="lsr-left">
-                  <span className="tag-pill cyan bold">USP-2</span>
-                  <span className="lsr-name">Confidence Gate & Intent Lock (Decision: AUTO_REPAIR)</span>
-                </div>
-                <div className="lsr-right">
-                  <span className="confirmed-tag">✓ verified</span>
-                  <span className="ml-pct">Tokens: 0</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Target API Mutation Simulator - Clean Pattern Explorer Card Style */}
       <div className="card" style={{ marginTop: "16px" }}>

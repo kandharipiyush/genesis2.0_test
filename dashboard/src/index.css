@@ -716,6 +716,11 @@ code, pre, .font-mono {
   font-weight: 600;
 }
 
+.confirmed-tag.refused {
+  color: var(--accent-red);
+  font-weight: 600;
+}
+
 .ml-pct {
   color: var(--text-dark-muted);
 }
