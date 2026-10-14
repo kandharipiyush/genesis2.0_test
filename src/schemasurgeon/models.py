@@ -83,6 +83,8 @@ class RecoveryOutcome(BaseModel):
     duration_ms: float = 0.0
     error_class: Optional[str] = None
     evidence_summary: List[str] = Field(default_factory=list)
+    decision: Optional[str] = None
+    confidence_score: Optional[float] = None
 
 
 class TaskIntent(BaseModel):

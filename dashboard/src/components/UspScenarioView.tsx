@@ -214,21 +214,38 @@ export const UspScenarioView: React.FC<UspScenarioViewProps> = ({ currentTab, on
         <div className="live-result-banner-card">
           <div className="result-header-bar">
             <span>Live Self-Healing Result — Scenario: {selectedScen.title}</span>
-            <span className="latency-tag">✓ {execResult.duration_ms ? execResult.duration_ms.toFixed(1) : 45.2}ms</span>
+            <span className="latency-tag">✓ {execResult.duration_ms !== undefined && execResult.duration_ms !== null ? Number(execResult.duration_ms).toFixed(1) : "0.0"}ms</span>
           </div>
 
           <div className="result-body-grid">
             <div className={`score-callout-block ${execResult.status === "verified_success" ? "success" : "refused"}`}>
               <div className="score-main-title">{execResult.status ? execResult.status.toUpperCase() : "VERIFIED_SUCCESS"}</div>
-              <div className="score-sub-label">MTTR: {execResult.duration_ms ? execResult.duration_ms.toFixed(1) : 45.2} ms</div>
-              <div className="score-detail-pill">AUTO_REPAIR — Schema v2 Verified</div>
+              <div className="score-sub-label">MTTR: {execResult.duration_ms !== undefined && execResult.duration_ms !== null ? Number(execResult.duration_ms).toFixed(1) : "0.0"} ms</div>
+              <div className="score-detail-pill">
+                {execResult.status === "verified_success"
+                  ? (execResult.promoted || (execResult.retry_count && execResult.retry_count > 0) || execResult.decision === "AUTO_REPAIR"
+                      ? `AUTO_REPAIR — Schema v${execResult.new_version || 2} Verified`
+                      : `DIRECT_SUCCESS — Schema v${execResult.old_version || 1} Validated`)
+                  : (execResult.decision === "REFUSE" || execResult.status === "refused"
+                      ? "REFUSED — Safety Guard Enforced"
+                      : (execResult.status || "ERROR").toUpperCase())}
+              </div>
             </div>
 
             <div className="result-details-col">
+              {execResult.refusal_reason && (
+                <div className="why-uncertain-banner" style={{ background: "var(--accent-red-soft)", color: "var(--accent-red)", borderColor: "var(--accent-red-border)", marginBottom: "8px" }}>
+                  <strong>Refusal reason:</strong> {execResult.refusal_reason}
+                </div>
+              )}
+
               <div className="why-uncertain-banner">
-                <strong>Evidence trail:</strong> {execResult.evidence_summary && execResult.evidence_summary.length > 0
+                <strong>Evidence trail:</strong>{" "}
+                {execResult.evidence_summary && execResult.evidence_summary.length > 0
                   ? execResult.evidence_summary.join(" • ")
-                  : "HTTP 422 schema error observed • Fetched authoritative OpenAPI v2 contract • Deterministic AST mapping applied"}
+                  : execResult.status === "verified_success" && !execResult.promoted && !execResult.retry_count
+                  ? "No schema drift detected. Upstream API responded directly with HTTP 200."
+                  : "No drift evidence recorded."}
               </div>
 
               {execResult.transformed_arguments && (

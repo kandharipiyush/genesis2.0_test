@@ -555,6 +555,10 @@ code, pre, .font-mono {
   background: var(--accent-orange);
 }
 
+.main-score-box.green {
+  background: var(--accent-green);
+}
+
 .main-score-box.red {
   background: var(--accent-red);
 }
@@ -583,6 +587,18 @@ code, pre, .font-mono {
   margin-top: 6px;
 }
 
+.uncertain-pill.green {
+  background: var(--accent-green-soft);
+  border: 1px solid var(--accent-green-border);
+  color: var(--accent-green);
+}
+
+.uncertain-pill.red {
+  background: var(--accent-red-soft);
+  border: 1px solid var(--accent-red-border);
+  color: var(--accent-red);
+}
+
 .why-uncertain-box {
   background: var(--accent-gold-subtle);
   border: 1px solid #FCD34D;
@@ -592,10 +608,21 @@ code, pre, .font-mono {
   font-size: 13px;
 }
 
+.why-uncertain-box.green {
+  background: var(--accent-green-soft);
+  border: 1px solid var(--accent-green-border);
+  color: var(--accent-green);
+}
+
 .why-uncertain-box.red {
   background: var(--accent-red-soft);
   border: 1px solid var(--accent-red-border);
   color: var(--accent-red);
+}
+
+.refused-tag {
+  color: var(--accent-red);
+  font-weight: 600;
 }
 
 .keyword-evidence-section {

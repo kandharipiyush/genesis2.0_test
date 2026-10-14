@@ -111,6 +111,7 @@ class SchemaSurgeonGateway:
         if not contract:
             return RecoveryOutcome(
                 status="error",
+                decision="REFUSE",
                 tool_name=tool_name,
                 old_version=0,
                 error_class="unknown_tool",
@@ -149,6 +150,7 @@ class SchemaSurgeonGateway:
             )
             return RecoveryOutcome(
                 status="suppressed",
+                decision="SUPPRESSED",
                 tool_name=tool_name,
                 old_version=contract.version,
                 refusal_reason=supp_reason,
@@ -220,6 +222,7 @@ class SchemaSurgeonGateway:
                     dur_ms = (time.time() - start_time) * 1000.0
                     return RecoveryOutcome(
                         status="verified_success",
+                        decision="DIRECT_SUCCESS",
                         tool_name=tool_name,
                         old_version=contract.version,
                         new_version=contract.version,
@@ -252,6 +255,7 @@ class SchemaSurgeonGateway:
             dur_ms = (time.time() - start_time) * 1000.0
             return RecoveryOutcome(
                 status="error",
+                decision="REFUSE",
                 tool_name=tool_name,
                 old_version=contract.version,
                 error_class=error_class,
@@ -291,6 +295,7 @@ class SchemaSurgeonGateway:
             )
             return RecoveryOutcome(
                 status="refused",
+                decision="REFUSE",
                 tool_name=tool_name,
                 old_version=contract.version,
                 refusal_reason=refusal_reason,
@@ -368,6 +373,8 @@ class SchemaSurgeonGateway:
             )
             return RecoveryOutcome(
                 status="refused",
+                decision=gate_decision.decision,
+                confidence_score=candidate.confidence_score,
                 tool_name=tool_name,
                 old_version=contract.version,
                 refusal_reason=refusal_msg,
@@ -401,6 +408,8 @@ class SchemaSurgeonGateway:
             )
             return RecoveryOutcome(
                 status="refused",
+                decision="REFUSE",
+                confidence_score=candidate.confidence_score,
                 tool_name=tool_name,
                 old_version=contract.version,
                 refusal_reason=refusal_msg,
@@ -432,6 +441,8 @@ class SchemaSurgeonGateway:
             )
             return RecoveryOutcome(
                 status="refused",
+                decision="REFUSE",
+                confidence_score=candidate.confidence_score,
                 tool_name=tool_name,
                 old_version=contract.version,
                 refusal_reason=refusal_msg,
@@ -494,6 +505,8 @@ class SchemaSurgeonGateway:
             except Exception:
                 return RecoveryOutcome(
                     status="error",
+                    decision="REFUSE",
+                    confidence_score=candidate.confidence_score,
                     tool_name=tool_name,
                     old_version=contract.version,
                     error_class="network_error",
@@ -505,6 +518,8 @@ class SchemaSurgeonGateway:
             self.registry.quarantine(tool_name, candidate, f"Retry returned HTTP {retry_status}")
             return RecoveryOutcome(
                 status="refused",
+                decision="REFUSE",
+                confidence_score=candidate.confidence_score,
                 tool_name=tool_name,
                 old_version=contract.version,
                 refusal_reason=f"Retry attempt failed with HTTP {retry_status}",
@@ -519,6 +534,8 @@ class SchemaSurgeonGateway:
             self.registry.quarantine(tool_name, candidate, f"Response validation failed: {'; '.join(resp_errs)}")
             return RecoveryOutcome(
                 status="quarantined",
+                decision="REFUSE",
+                confidence_score=candidate.confidence_score,
                 tool_name=tool_name,
                 old_version=contract.version,
                 refusal_reason="Response schema validation failed on retry",
@@ -549,6 +566,8 @@ class SchemaSurgeonGateway:
             )
             return RecoveryOutcome(
                 status="quarantined",
+                decision="REFUSE",
+                confidence_score=candidate.confidence_score,
                 tool_name=tool_name,
                 old_version=contract.version,
                 retry_count=1,
@@ -580,6 +599,8 @@ class SchemaSurgeonGateway:
             )
             return RecoveryOutcome(
                 status="refused",
+                decision="REFUSE",
+                confidence_score=candidate.confidence_score,
                 tool_name=tool_name,
                 old_version=contract.version,
                 retry_count=1,
@@ -622,6 +643,8 @@ class SchemaSurgeonGateway:
 
         return RecoveryOutcome(
             status="verified_success",
+            decision="AUTO_REPAIR",
+            confidence_score=candidate.confidence_score,
             tool_name=tool_name,
             old_version=contract.version,
             new_version=candidate.target_version,
@@ -680,6 +703,7 @@ class SchemaSurgeonGateway:
         )
         return RecoveryOutcome(
             status="timeout",
+            decision="REFUSE",
             tool_name=context.tool_name,
             old_version=old_version,
             promoted=False,

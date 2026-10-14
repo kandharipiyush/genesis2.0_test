@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Sliders, RefreshCw, Zap, CheckCircle2, Play, Activity, AlertTriangle, ShieldCheck } from "lucide-react";
 import { triggerProactiveCheck, applyMockMutations, resetMockApi, getMockState, executeProbeTool } from "../api";
+import { getProbeDisplayData } from "./probeResultFormat";
 
 interface ControlsViewProps {
   onRefreshAll: () => void;
@@ -106,6 +107,8 @@ export const ControlsView: React.FC<ControlsViewProps> = ({ onRefreshAll }) => {
     }
   };
 
+  const probeDisplay = probeResult ? getProbeDisplayData(probeResult, probeUserId) : null;
+
   return (
     <div className="view-container">
       {/* Header Row */}
@@ -178,14 +181,14 @@ export const ControlsView: React.FC<ControlsViewProps> = ({ onRefreshAll }) => {
               <span>Run Live Tool Probe →</span>
             </button>
             <span className="latency-pill">
-              ✓ {probeResult?.duration_ms ? probeResult.duration_ms.toFixed(1) : "45.2"}ms
+              ✓ {probeResult?.duration_ms !== undefined && probeResult?.duration_ms !== null ? Number(probeResult.duration_ms).toFixed(1) : "0.0"}ms
             </span>
           </div>
         </div>
       </div>
 
       {/* Live Gateway Execution Result Card */}
-      {probeResult && (
+      {probeDisplay && (
         <div className="live-result-card">
           <div className="live-result-header-bar">
             <span>Live Gateway Execution Result — Tool: get_user (User ID: {probeUserId})</span>
@@ -193,62 +196,57 @@ export const ControlsView: React.FC<ControlsViewProps> = ({ onRefreshAll }) => {
 
           <div className="live-result-body">
             <div className="score-and-why-row">
-              <div
-                className={`main-score-box ${
-                  probeResult.status === "verified_success" ? "orange" : "red"
-                }`}
-              >
+              <div className={`main-score-box ${probeDisplay.scoreBoxClass}`}>
                 <div className="score-level-text">
-                  {probeResult.status === "verified_success" ? "VERIFIED_SUCCESS" : "REFUSED"}
+                  {probeDisplay.scoreLevelText}
                 </div>
                 <div className="score-sub-text">
-                  MTTR: {probeResult.duration_ms ? probeResult.duration_ms.toFixed(1) : "45.2"} ms
+                  {probeDisplay.latencyLabel}
                 </div>
               </div>
 
               <div className="score-summary-text">
                 <div style={{ fontWeight: "700", fontSize: "15px", color: "var(--text-dark-primary)" }}>
-                  {probeResult.status === "verified_success"
-                    ? "Safe Zero-Touch Repair Completed & Verified (0 LLM Tokens Spent)"
-                    : "Safe Refusal Enforced by Gateway Safety Guardrails"}
+                  {probeDisplay.summaryTitle}
                 </div>
-                <div className="uncertain-pill">
-                  {probeResult.status === "verified_success"
-                    ? `AUTO_REPAIR — Contract Promoted to v${probeResult.new_version || 2}`
-                    : "REFUSED — Hard Safety Invariant Protected"}
+                <div className={probeDisplay.decisionPillClass}>
+                  {probeDisplay.decisionPillText}
                 </div>
               </div>
             </div>
 
-            {probeResult.refusal_reason && (
+            {probeDisplay.refusalReason && (
               <div className="why-uncertain-box red">
-                <span style={{ fontWeight: "700" }}>Refusal Reason:</span> {probeResult.refusal_reason}
+                <span style={{ fontWeight: "700" }}>Refusal Reason:</span> {probeDisplay.refusalReason}
               </div>
             )}
 
-            <div className="why-uncertain-box">
+            <div className={`why-uncertain-box ${probeDisplay.isEvidenceGreen ? "green" : ""}`}>
               <span style={{ fontWeight: "700" }}>Evidence Trail:</span>{" "}
-              {probeResult.evidence_summary && probeResult.evidence_summary.length > 0
-                ? probeResult.evidence_summary.join(" • ")
-                : "HTTP 422 schema error observed • Fetched authoritative OpenAPI v2 contract from trusted server • Mapped 'user_id' -> 'target.id' (score: 0.73, transform: move)"}
+              {probeDisplay.evidenceTrail}
             </div>
 
             {/* Transformed Payload and Result Section */}
             <div className="keyword-evidence-section">
               <div className="section-label">Payload Transformation & Verification Details</div>
               <div className="highlighted-text-box">
-                Original caller passed <span className="hl-yellow">user_id: "{probeUserId}"</span>. Gateway diagnosed remote schema, applied typed AST adaptation, and verified response against active intent.
+                {probeDisplay.highlightedText}
               </div>
               <div className="rule-tags-row">
-                <span className="tag-pill yellow">Original Input: user_id: "{probeUserId}"</span>
-                {probeResult.transformed_arguments && (
+                <span className="tag-pill yellow">Original Input: {probeDisplay.originalInput}</span>
+                {probeDisplay.transformedArgumentsText && (
                   <span className="tag-pill cyan">
-                    Transformed Arguments: {JSON.stringify(probeResult.transformed_arguments)}
+                    Transformed Arguments: {probeDisplay.transformedArgumentsText}
                   </span>
                 )}
-                {probeResult.response_data && (
+                {probeDisplay.verifiedResponseText && (
                   <span className="tag-pill green">
-                    Verified Response: {JSON.stringify(probeResult.response_data)}
+                    Verified Response: {probeDisplay.verifiedResponseText}
+                  </span>
+                )}
+                {probeDisplay.safetyTagText && (
+                  <span className="tag-pill red">
+                    {probeDisplay.safetyTagText}
                   </span>
                 )}
               </div>
@@ -260,22 +258,22 @@ export const ControlsView: React.FC<ControlsViewProps> = ({ onRefreshAll }) => {
               <div className="lsr-match-row">
                 <div className="lsr-left">
                   <span className="tag-pill yellow bold">USP-1</span>
-                  <span className="lsr-name">Deterministic AST Field Mapping (Jaccard Score: 0.73)</span>
+                  <span className="lsr-name">{probeDisplay.usp1Title}</span>
                 </div>
                 <div className="lsr-right">
-                  <span className="confirmed-tag">✓ verified</span>
-                  <span className="ml-pct">MTTR: {probeResult.duration_ms ? probeResult.duration_ms.toFixed(1) : "45.2"}ms</span>
+                  <span className={probeDisplay.usp1StatusClass}>{probeDisplay.usp1StatusText}</span>
+                  <span className="ml-pct">{probeDisplay.usp1MetricText}</span>
                 </div>
               </div>
 
               <div className="lsr-match-row">
                 <div className="lsr-left">
                   <span className="tag-pill cyan bold">USP-2</span>
-                  <span className="lsr-name">Confidence Gate & Intent Lock (Decision: AUTO_REPAIR)</span>
+                  <span className="lsr-name">{probeDisplay.usp2Title}</span>
                 </div>
                 <div className="lsr-right">
-                  <span className="confirmed-tag">✓ verified</span>
-                  <span className="ml-pct">Tokens: 0</span>
+                  <span className={probeDisplay.usp2StatusClass}>{probeDisplay.usp2StatusText}</span>
+                  <span className="ml-pct">{probeDisplay.usp2TokensText}</span>
                 </div>
               </div>
             </div>

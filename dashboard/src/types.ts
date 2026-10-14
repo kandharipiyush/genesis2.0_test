@@ -91,3 +91,21 @@ export interface BenchmarkData {
   status?: string;
   message?: string;
 }
+
+export interface ExecutionOutcome {
+  status: string;
+  tool_name: string;
+  old_version: number;
+  new_version?: number | null;
+  retry_count: number;
+  task_verified: boolean;
+  promoted: boolean;
+  refusal_reason?: string | null;
+  transformed_arguments?: Record<string, any> | null;
+  response_data?: any;
+  duration_ms: number;
+  error_class?: string | null;
+  evidence_summary: string[];
+  decision?: string | null;
+  confidence_score?: number | null;
+}
